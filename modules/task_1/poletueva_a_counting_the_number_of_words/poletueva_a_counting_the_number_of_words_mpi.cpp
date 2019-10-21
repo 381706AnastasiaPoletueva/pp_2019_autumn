@@ -12,7 +12,7 @@ int getCountWords(std:: string str) {
     throw Error_empty;
   }
   int count = 1;
-  for (int i = 0; i < str.size(); i++)
+  for (unsigned int i = 0; i < str.size(); i++)
     if ((str[i] == ' ')&&(str[i+1] != ' ')&&(i+1 < str.size())) count++;
   return count;
 }
@@ -82,7 +82,7 @@ int getCountWordsParallel(std::string str) {
   int global_sum = 0;
 
   int local_sum = 0;
-  for (int i = 0; i < loc_vec.size(); i++)
+  for (unsigned int i = 0; i < loc_vec.size(); i++)
     if (loc_vec[i] == ' ') local_sum++;
 
   MPI_Reduce(&local_sum, &global_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
