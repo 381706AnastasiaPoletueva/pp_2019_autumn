@@ -52,12 +52,10 @@ int getCountWordsParallel(std::string str) {
 
   std::vector<char> vec;
   int delta;
-  int remain;
 
   if (rank == 0) {
     vec = std::vector<char>(str.begin(), str.end());
     delta = vec.size() / size;
-    remain = size - delta * (size - 1);
     for (int proc = 1; proc < size - 1; proc++) {
       MPI_Send(&delta, 1, MPI_INT, proc, 1, MPI_COMM_WORLD);
       MPI_Send(&vec[0] + proc * delta, delta, MPI_CHAR, proc, 0, MPI_COMM_WORLD);
