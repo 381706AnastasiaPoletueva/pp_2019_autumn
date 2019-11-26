@@ -5,7 +5,7 @@
 #include <string>
 #include "./poletueva_a_counting_the_number_of_words_mpi.h"
 
-TEST(Count_Words_MPI, Eseq_String) {
+TEST(Count_Words_MPI, Eseq_Str) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
@@ -16,7 +16,7 @@ TEST(Count_Words_MPI, Eseq_String) {
   }
 }
 
-TEST(Count_Words_MPI, Paral_String) {
+TEST(Count_Words_MPI, Paral_Str) {
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   std::string testStr = "As cool as a cucumber";
