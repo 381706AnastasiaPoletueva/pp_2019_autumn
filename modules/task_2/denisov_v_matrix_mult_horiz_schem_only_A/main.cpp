@@ -113,9 +113,10 @@ TEST(matrix_mult_horiz_schem_only_A, check_correct_par_mult_matrix_1size) {
 
 TEST(matrix_mult_horiz_schem_only_A, check_correct_par_mult_matrix_even_size) {
     int rank;
+    MPI_Barrier(MPI_COMM_WORLD);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-    int sizeSide = 10;
+    int sizeSide = 20;
     std::vector<int> matrixA = createRandomMatrix(sizeSide);
     std::vector<int> matrixB = createRandomMatrix(sizeSide);
 
@@ -130,6 +131,23 @@ TEST(matrix_mult_horiz_schem_only_A, check_correct_par_mult_matrix_even_size) {
         ASSERT_EQ(resultSeq, resultPar);
         // std::cout << "Time seq: " << endSeq - startSeq << std::endl;
         // std::cout << "Time par: " << endPar - startPar << std::endl;
+    }
+}
+
+TEST(matrix_mult_horiz_schem_only_A, check_correct_par_mult_matrix_odd_size) {
+    int rank;
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int sizeSide = 15;
+    std::vector<int> matrixA = createRandomMatrix(sizeSide);
+    std::vector<int> matrixB = createRandomMatrix(sizeSide);
+
+    std::vector<int> resultPar = getMatrixMultPar(matrixA, matrixB, sizeSide);
+
+    if (rank == 0) {
+        std::vector<int> resultSeq = getMatrixMultSeq(matrixA, matrixB, sizeSide);
+        ASSERT_EQ(resultSeq, resultPar);
     }
 }
 

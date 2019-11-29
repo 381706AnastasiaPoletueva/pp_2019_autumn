@@ -10,12 +10,12 @@ std::vector <int> createRandomMatrix(int sizeSide) {
     if (sizeSide <= 0)
         throw "Error size of matrix";
 
-    std::mt19937 generator;
+    std::default_random_engine generator;
     generator.seed(static_cast<unsigned int>(time(0)));
 
     int sizeVector = sizeSide * sizeSide;
     std::vector <int> matrix(sizeVector);
-    for (auto i = 0; i < sizeVector; i++)
+    for (int i = 0; i < sizeVector; i++)
         matrix[i] = generator() % 10;
 
     return matrix;
@@ -32,10 +32,10 @@ std::vector<int> getMatrixMultSeq(std::vector<int> matrixA, std::vector<int> mat
 
     std::vector<int> matrixResult(sizeVector);
 
-    for (auto i = 0; i < sizeSide; i++) {
-        for (auto j = 0; j < sizeSide; j++) {
+    for (int i = 0; i < sizeSide; i++) {
+        for (int j = 0; j < sizeSide; j++) {
             matrixResult[i * sizeSide + j] = 0;
-            for (auto k = 0; k < sizeSide; k++) {
+            for (int k = 0; k < sizeSide; k++) {
                 matrixResult[i * sizeSide + j] += matrixA[i * sizeSide + k] * matrixB[k * sizeSide + j];
             }
         }
@@ -102,27 +102,26 @@ std::vector<int> getMatrixMultPar(std::vector<int> matrixA, std::vector<int> mat
             resultLocal.resize(sizeSide * delta + sizeSide * remainder);
         }
 
-        for (auto i = 0; i < delta + remainder; i++) {
-            for (auto j = 0; j < sizeSide; j++) {
+        for (int i = 0; i < delta + remainder; i++) {
+            for (int j = 0; j < sizeSide; j++) {
                 resultLocal[i * sizeSide + j] = 0;
-                for (auto k = 0; k < sizeSide; k++) {
+                for (int k = 0; k < sizeSide; k++) {
                     resultLocal[i * sizeSide + j] += vectorLocal[i * sizeSide + k] * matrixB[k * sizeSide + j];
                 }
             }
         }
-
     } else {
-        for (auto i = 0; i < delta; i++) {
-            for (auto j = 0; j < sizeSide; j++) {
-                resultLocal[i * sizeSide + j] = 0;
-                for (auto k = 0; k < sizeSide; k++) {
-                    resultLocal[i * sizeSide + j] += vectorLocal[i * sizeSide + k] * matrixB[k * sizeSide + j];
+        if (delta != 0) {
+            for (int i = 0; i < delta; i++) {
+                for (int j = 0; j < sizeSide; j++) {
+                    resultLocal[i * sizeSide + j] = 0;
+                    for (int k = 0; k < sizeSide; k++) {
+                        resultLocal[i * sizeSide + j] += vectorLocal[i * sizeSide + k] * matrixB[k * sizeSide + j];
+                    }
                 }
             }
         }
     }
-
-    MPI_Barrier(MPI_COMM_WORLD);
 
     if (rank == 0) {
         if (delta != 0) {
@@ -158,8 +157,8 @@ void printMatrix(std::vector<int> matrix, int sizeSide) {
         return;
     }
 
-    for (auto i = 0; i < sizeSide; ++i) {
-        for (auto j = 0; j < sizeSide; ++j) {
+    for (int i = 0; i < sizeSide; ++i) {
+        for (int j = 0; j < sizeSide; ++j) {
             std::cout << matrix[i * sizeSide + j] << " ";
         }
         std::cout << std::endl;
