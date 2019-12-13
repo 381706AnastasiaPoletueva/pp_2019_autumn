@@ -36,6 +36,7 @@ std::string getRandomStr() {
   std::string str = "";
 
   int k = 0;
+
   k = gen() % 100;
 
   for (int i = 0; i < k; i++) {
