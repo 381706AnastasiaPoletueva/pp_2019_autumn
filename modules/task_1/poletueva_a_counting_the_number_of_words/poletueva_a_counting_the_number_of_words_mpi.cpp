@@ -5,6 +5,7 @@
 #include <random>
 #include <ctime>
 #include <algorithm>
+#include <iostream>
 #include "../../../modules/task_1/poletueva_a_counting_the_number_of_words/poletueva_a_counting_the_number_of_words_mpi.h"
 
 int getCountWords(std:: string str) {
@@ -34,7 +35,8 @@ std::string getRandomStr() {
 
   std::string str = "";
 
-  int k = gen() % 100;
+  int k = 0;
+  k = gen() % 100;
 
   for (int i = 0; i < k; i++) {
     str.append(randomWord());
@@ -56,15 +58,18 @@ int getCountWordsParallel(std::string str) {
     vec = std::vector<char>(str.begin(), str.end());
     delta = vec.size() / size;
     rem = vec.size() % size;
-    if (delta < 1) {
-      int r;
-      r = getCountWords(str);
-      MPI_Bcast(&r, delta, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-      return r;
-    }
 }
+
   MPI_Bcast(&delta, 1, MPI_INT, 0, MPI_COMM_WORLD);
   MPI_Bcast(&rem, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+  if (delta < 1) {
+    int r;
+    if (rank == 0)
+      r = getCountWords(str);
+    MPI_Bcast(&r, delta, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    return r;
+  }
 
   if (rank == 0) {
     for (int proc = 1; proc < size - 1; proc++) {
