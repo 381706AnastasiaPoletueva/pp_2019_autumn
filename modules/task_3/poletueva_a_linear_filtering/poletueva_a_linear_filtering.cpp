@@ -8,8 +8,6 @@
 #include <utility>
 #include "../../../modules/task_3/poletueva_a_linear_filtering/poletueva_a_linear_filtering.h"
 
-const int L = 256;
-
 std::vector<int> LinFilter(const std::vector <int>& a, int rows, int cols) {
   if (rows < 0 || cols < 0)
     throw Error;
