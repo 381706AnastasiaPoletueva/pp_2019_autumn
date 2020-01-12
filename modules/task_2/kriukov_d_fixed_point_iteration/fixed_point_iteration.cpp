@@ -39,7 +39,7 @@ double getScalarProduct(const std::vector<double>& a, const std::vector<double>&
     return res;
 }
 
-double getError(std::vector<double> vec1, std::vector<double> vec2, int var_count) {
+double getError(const std::vector<double>& vec1, const std::vector<double>& vec2, int var_count) {
     double res = 0.0;
     for (int i = 0; i < var_count; i++) {
         res += std::abs(vec2[i] - vec1[i]);
@@ -47,31 +47,35 @@ double getError(std::vector<double> vec1, std::vector<double> vec2, int var_coun
     return res;
 }
 
-double getAbsError(std::vector<double> matrix,
-                   std::vector<double> free_term, std::vector<double> resvec, int var_count) {
+double getAbsError(const std::vector<double>& matrix,
+                  const std::vector<double>& free_term, const std::vector<double>& resvec, int var_count) {
     double res = 0;
     for (int i = 0; i < var_count; i++) {
         std::vector<double> lvec = std::vector<double>(matrix.begin() + i * var_count,
         matrix.begin() + (i + 1) * var_count);
-        res += getScalarProduct(resvec, lvec) - free_term[i];
+        res += (getScalarProduct(resvec, lvec) - free_term[i]) * (getScalarProduct(resvec, lvec) - free_term[i]);
     }
-    return res;
+    return sqrt(res);
 }
 
 double fixedPointIterationStep(std::vector<double> src_vect,
                                std::vector<double> base, double free_term, int var_count, int ind) {
     std::vector<double> vec(var_count);
     double dev = src_vect[ind];
-    for (int j = 0; j < var_count; j++) {
-        vec[j] = -src_vect[j] / dev;
+    if (dev) {
+        for (int j = 0; j < var_count; j++) {
+            vec[j] = -src_vect[j] / dev;
+        }
+        vec[ind] = 0;
+    } else {
+        dev = 1;
     }
-    vec[ind] = 0;
     double res = getScalarProduct(base, vec) + free_term / dev;
     return res;
 }
 
-std::vector<double> fixedPointIterationSequential(std::vector<double> matrix,
-                                                  std::vector<double> free_term, int var_count, double err) {
+std::vector<double> fixedPointIterationSequential(const std::vector<double>& matrix,
+                                                  const std::vector<double>& free_term, int var_count, double err) {
     std::vector<double> res(var_count);
     std::vector<double> buff(var_count);
     double currerr = 0;
@@ -87,8 +91,8 @@ std::vector<double> fixedPointIterationSequential(std::vector<double> matrix,
     return res;
 }
 
-std::vector<double> fixedPointIterationParralel(std::vector<double> matrix,
-                                                std::vector<double> free_term, int var_count, double err) {
+std::vector<double> fixedPointIterationParralel(const std::vector<double>& matrix,
+    const std::vector<double>& free_term, int var_count, double err) {
     int size, rank;
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -104,16 +108,17 @@ std::vector<double> fixedPointIterationParralel(std::vector<double> matrix,
     const int delta = (var_count / size);
     const int rem = var_count %size;
 
-    if (rank == 0) {
+    if (rank == 0)
         fterm = free_term;
-        for (int proc = 1; proc < size; proc++) {
-            MPI_Request reqv;
-            MPI_Isend(&matrix[0] + rem* var_count + proc * delta * var_count,
-                      delta * var_count, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD, &reqv);
-        }
-    }
 
     MPI_Bcast(&fterm[0], var_count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (rank == 0) {
+        for (int proc = 1; proc < size; proc++) {
+            MPI_Send(&matrix[0] + rem * var_count + proc * delta * var_count,
+                      delta * var_count, MPI_DOUBLE, proc, 0, MPI_COMM_WORLD);
+        }
+    }
 
     std::vector<double> local_vec(delta * var_count);
     if (rank == 0) {
@@ -133,20 +138,25 @@ std::vector<double> fixedPointIterationParralel(std::vector<double> matrix,
                                                                local_vec.begin() + (i + 1) * var_count);
                 buff[i] = fixedPointIterationStep(lvec, res, fterm[i], var_count, i);
             }
-            for (int j = delta + rem; j < var_count; j++) {
+            for (int j = 1; j < size; j++) {
+                std::vector<double> recv(delta);
                 MPI_Status status;
-                MPI_Recv(&buff[j], 1, MPI_DOUBLE, (j - rem) / delta, j, MPI_COMM_WORLD, &status);
+                MPI_Recv(&recv[0], delta, MPI_DOUBLE, j, 0, MPI_COMM_WORLD, &status);
+                for (int k = 0; k < delta; k++) {
+                    buff[j * delta + rem + k] = recv[k];
+                }
             }
             currerr = getError(buff, res, var_count);
             res = buff;
         } else {
+            std::vector<double> snd(delta);
             for (int i = 0; i < delta; i++) {
                 int ind = rem + i + rank * delta;
                 std::vector<double> lvec = std::vector<double>(local_vec.begin() + i * var_count,
                                                                local_vec.begin() + (i + 1) * var_count);
-                double stepRes = fixedPointIterationStep(lvec, res, fterm[ind], var_count, ind);
-                MPI_Send(&stepRes, 1, MPI_DOUBLE, 0, ind, MPI_COMM_WORLD);
+                snd[i] = fixedPointIterationStep(lvec, res, fterm[ind], var_count, ind);
             }
+            MPI_Send(&snd[0], delta, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
         }
         MPI_Bcast(&res[0], var_count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Bcast(&currerr, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);

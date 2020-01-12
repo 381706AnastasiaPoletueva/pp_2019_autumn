@@ -1,31 +1,33 @@
 // Copyright 2019 Okmyanskiy Andrey
 #include <math.h>
+#include <vector>
 #include <iostream>
 #include "../../../modules/task_2/okmyanskiy_a_topology_line/topology_line.h"
-int getMessage(int ProcRank, int ProcNum, MPI_Comm MPI_COMM) {
+
+std::vector<int> getMessage(int ProcRank, int ProcNum, MPI_Comm MPI_COMM, int sizeVector) {
     if (ProcNum == 1) {
         std::cout << "The program must run on more than one process\n";
-        return -1;
+        std::vector<int> result(1);
+        result[0] = 1;
+        return result;
     } else {
-        int message = -1;
-        int rank1 = ProcNum / 3;
-        int rank2 = ProcNum / 2;
-        if (rank1 == 0)
-            rank1++;
-        if (ProcRank == rank1) {
-            MPI_Send(&ProcRank, 1, MPI_INT, 0, 0, MPI_COMM);
-        }
-        if (ProcRank == rank2) {
-            MPI_Send(&ProcRank, 1, MPI_INT, 0, 0, MPI_COMM);
-        }
+        std::vector<int> result(ProcNum*sizeVector);
+        MPI_Status Status;
         if (ProcRank == 0) {
-            int temp;
-            MPI_Status Status;
-            MPI_Recv(&temp, 1, MPI_INT, rank1, 0, MPI_COMM, &Status);
-            MPI_Recv(&message, 1, MPI_INT, rank2, 0, MPI_COMM, &Status);
-            message += temp;
+            for (int i = 1; i < ProcNum; i++) {
+                MPI_Recv(&result[i*sizeVector], sizeVector, MPI_INT, i, 12, MPI_COMM, &Status);
+            }
+            for (int i = 0; i < sizeVector; i++) {
+                result[i] = ProcRank;
+            }
+        } else {
+            std::vector<int> Temp(sizeVector);
+            for (unsigned int i = 0; i < Temp.size(); i++) {
+                Temp[i] = ProcRank;
+            }
+            MPI_Send(&Temp[0], sizeVector, MPI_INT, 0, 12, MPI_COMM);
         }
-        return message;
+        return result;
     }
 }
 MPI_Comm getLineComm(MPI_Comm oldComm, int ProcNum) {
