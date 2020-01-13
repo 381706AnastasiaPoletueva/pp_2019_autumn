@@ -85,6 +85,18 @@ TEST(gauss_method, can_throw_if_matrix_size_not_equal_result_vector_size) {
     ASSERT_ANY_THROW(mat.getParallelSolution({1, 1, 1, 1}));
 }
 
+TEST(gauss_method, can_throw_if_matrix_has_same_row_element) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    std::vector<std::vector<double>> vec{ {1, 2, 3}, {2, 4, 6}, {2, 7, 7} };
+    Matrix mat(vec);
+    std::vector<double> resM(mat.getMatrixSize());
+    ASSERT_ANY_THROW(resM = mat.getParallelSolution({ 1, 2, 1 }));
+    if (rank == 0) {
+        ASSERT_ANY_THROW(std::vector<double> res = mat.getSequentialSolution({ 1, 2, 1 }));
+    }
+}
+
 TEST(gauss_method, can_calculate_matrix_with_size_in_5_elements) {
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -328,10 +340,9 @@ TEST(gauss_method, can_calculate_big_not_random_matrix_that_was_with_error_1) {
     if (rank == 0) {
         matrix.getSequentialSolution(b);
     }
-
     endTime = MPI_Wtime();
     if (rank == 0) {
-        printf("Time of parallel method - %f\n", startTime - endTime);
+        printf("Time of sequential method - %f\n", startTime - endTime);
     }
     startTime = MPI_Wtime();
     matrix.getParallelSolution(b);
