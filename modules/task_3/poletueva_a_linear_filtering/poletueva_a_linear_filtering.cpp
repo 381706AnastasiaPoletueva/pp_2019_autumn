@@ -19,7 +19,7 @@ std::vector<int> LinFilter(const std::vector <int>& a, int rows, int cols) {
     for (int x = 1; x < rows - 1; x++)
       for (int i = -r; i <= r; i++)
         for (int j = -r; j <= r; j++)
-          res[x + y *rows] += static_cast<int>( a[x + i + (y + j)*rows] * h[i + 1 + (j + 1) * 3]);
+          res[x + y *rows] += static_cast<int>(a[x + i + (y + j)*rows] * h[i + 1 + (j + 1) * 3]);
   return res;
 }
 
