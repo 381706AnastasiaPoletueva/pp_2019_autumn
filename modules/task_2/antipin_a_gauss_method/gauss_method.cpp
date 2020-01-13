@@ -57,9 +57,12 @@ std::vector<double> Matrix::getSequentialSolution(const std::vector<double>& coe
     std::vector<double> result(n);
     std::vector<double> additionalMat(mem);
     std::vector<double> copyCoefVec(coefVec);
-    for (int k = 0; k < n - 1; ++k) {
+    for (int k = 0; k < n; ++k) {
         double leaderElem = additionalMat[k*n + k];
         if (leaderElem == 0.0) {
+            if (k == n - 1) {
+                throw(1);
+            }
             for (int j = k + 1; j < n; ++j) {
                 if (additionalMat[j*n + k] != 0.0) {
                     std::swap(copyCoefVec[k], copyCoefVec[j]);
@@ -114,9 +117,9 @@ std::vector<double> Matrix::getParallelSolution(const std::vector<double>& coefV
     }
     if (size > n) {
         std::vector<double> res;
-        if (rank == 0) {
-            res = getSequentialSolution(coefVec);
-        }
+        // if (rank == 0) {
+        res = getSequentialSolution(coefVec);
+        // }
         return res;
     }
     std::vector<double> copyCoefVec(coefVec);
@@ -142,6 +145,9 @@ std::vector<double> Matrix::getParallelSolution(const std::vector<double>& coefV
         MPI_Bcast(&recvVec[0], n, MPI_DOUBLE, i % size, MPI_COMM_WORLD);
         leaderElem = recvVec[i];
         if (leaderElem == 0.0) {
+            if (i == n - 1) {
+                throw(1);
+            }
             for (int j = i + 1; j < n; ++j) {
                 if (recvVec[j] != 0.0) {
                     std::swap(recvVec[i], recvVec[j]);
@@ -196,8 +202,18 @@ double myAbs(const double & number) {
 void getRandomVector(std::vector<double>* vec) {
     std::mt19937 gen;
     gen.seed(static_cast<unsigned int>(time(0)));
-    for (int i = 0; i < static_cast<int>((*vec).size()); ++i) {
-        (*vec)[i] = static_cast<double>(gen() % 10);
+    const int n = static_cast<int>(sqrt(vec->size()));
+    int k = n;
+    for (int i = static_cast<int>((*vec).size()) - 1; i >= 0; --i) {
+        if (k*n - k == i) {
+            (*vec)[i] = static_cast<double>(gen() % 10);
+            if ((*vec)[i] != 0) {
+                (*vec)[i] *= -1;
+            }
+            --k;
+        } else {
+            (*vec)[i] = static_cast<double>(gen() % 10);
+        }
     }
 }
 
